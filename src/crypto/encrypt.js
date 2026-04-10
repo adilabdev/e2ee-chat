@@ -14,7 +14,7 @@ export function encryptMessage(message, receiverPublicKey, senderSecretKey) {
   );
 
   return {
-    encrypted,
-    nonce,
+    encrypted: Array.from(encrypted),
+    nonce: Array.from(nonce),
   };
 }

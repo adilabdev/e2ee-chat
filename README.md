@@ -1,147 +1,275 @@
-📄 README (KOPYALA YAPIŞTIR)
-# 🔐 E2EE Chat (Signal-lite)
+KOPYALA / YAPIŞTIR
 
-A minimal **end-to-end encrypted chat application** built with React, Vite, and TweetNaCl.
+# 🔐 E2EE Chat (Signal-lite Educational Project)
 
-This project demonstrates how modern secure messaging systems work at a simplified level:
-identity generation, encryption, and message transport separation.
+A real-time **End-to-End Encrypted (E2EE) chat system** built with React, Vite, WebSocket, and TweetNaCl.
+
+This project demonstrates how secure messaging applications (like Signal) work internally:
+identity generation, encryption flow, message transport separation, and cryptographic design principles.
 
 ---
 
 # 🚀 Features
 
-- 🔐 Public / Private key identity generation
-- 🧾 Fingerprint generation for identity verification
-- 💬 End-to-end encrypted messaging (client-side)
-- ⚡ React + Vite frontend
-- 🧠 Cryptography using TweetNaCl
-- 🌐 WebSocket-ready architecture (future extension)
+- 🔐 Public / Private key generation (NaCl box cryptography)
+- 🧾 Persistent identity stored in browser (localStorage)
+- 🧠 Fingerprint-based identity verification system
+- 💬 End-to-end encrypted messaging (client-side encryption)
+- 🌐 WebSocket real-time message relay (server cannot read messages)
+- 🔒 Separation of encryption layer and transport layer
+- ⚡ React + Vite modern frontend architecture
 
 ---
 
-# 🧠 How it works (Concept)
+# ⚙️ Tech Stack
 
-This project simulates a simplified secure messaging system:
+## Frontend
+- React (UI framework)
+- Vite (build tool / dev server)
+- JavaScript (ES6)
 
-### 1. Identity creation
-Each user generates a key pair:
+## Cryptography
+- TweetNaCl (public-key cryptography)
+- NaCl.box (authenticated encryption)
+- nonce-based encryption (prevents replay attacks)
 
-- Public key → shared with others
-- Private key → never leaves device
-
----
-
-### 2. Fingerprint verification
-Public key is converted into a short fingerprint string so users can manually verify identities.
-
----
-
-### 3. Message encryption
-Before sending:
-
-- Message is encrypted on the client
-- Receiver's public key is used
-- Sender’s secret key is used
-
-👉 Server never sees plaintext messages
+## Communication
+- WebSocket (Node.js server)
+- real-time message relay (no message inspection)
 
 ---
 
-### 4. Message transport
-(Current version)
-- Messages are logged / simulated locally
+# 🧠 System Architecture
 
-(Future version)
-- WebSocket server will relay encrypted messages between users
+
+User A (Browser)
+↓ encrypt(message, User B publicKey)
+WebSocket Server (relay only - no decryption)
+↓
+User B (Browser)
+↓ decrypt(message, User A publicKey)
+
+
+👉 Important:
+The server NEVER sees plaintext messages.
+
+---
+
+# 🧾 Fingerprint System (Identity Verification)
+
+Each user has a cryptographic identity based on a keypair:
+
+- Public Key → shared with others
+- Private Key → stays in browser (never shared)
+
+## 🔍 What is Fingerprint?
+
+A fingerprint is a **short human-readable representation of a public key**.
+
+Example:
+
+Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:1:1f:aa
+
+
+## 🎯 Purpose:
+
+- Verify identity between users manually
+- Prevent impersonation attacks
+- Used like “security code” in Signal
+
+👉 If two users see same fingerprint = identity is trusted
 
 ---
 
 # 🏗️ Project Structure
 
 
-src/
-├── components/
-│ ├── Setup.jsx # Identity creation UI
-│ ├── Chat.jsx # Messaging UI
+e2ee-chat/
 │
-├── crypto/
-│ ├── keys.js # Key generation
-│ ├── encrypt.js # Encryption logic
-│ ├── decrypt.js # Decryption logic
+├── public/
 │
-├── utils/
-│ ├── fingerprint.js # Public key hashing
+├── server/
+│ └── server.js # WebSocket relay server (no encryption logic)
 │
-├── App.jsx
+├── src/
+│ │
+│ ├── components/
+│ │ ├── Setup.jsx # Identity creation screen
+│ │ ├── Chat.jsx # Chat UI + messaging logic
+│ │
+│ ├── crypto/
+│ │ ├── keys.js # Keypair generation + persistence
+│ │ ├── encrypt.js # Message encryption (nacl.box)
+│ │ ├── decrypt.js # Message decryption
+│ │
+│ ├── utils/
+│ │ ├── fingerprint.js # Public key → fingerprint generator
+│ │
+│ ├── hooks/
+│ │ ├── useSocket.js # WebSocket communication layer
+│ │
+│ ├── App.jsx
+│ ├── main.jsx
+│
+├── package.json
+└── vite.config.js
 
 
 ---
 
-# ⚙️ Tech Stack
+# 🧠 Module Responsibilities
 
-- React (UI)
-- Vite (build tool)
-- TweetNaCl (cryptography)
-- JavaScript (no TypeScript for simplicity)
+## 🔐 crypto/keys.js
+- Generates public/private keypair
+- Stores identity in localStorage
+- Ensures persistent identity per browser
 
 ---
 
-# 🔐 Security Model
+## 🔐 crypto/encrypt.js
+- Encrypts message using receiver public key
+- Uses sender secret key for authentication
+- Outputs encrypted payload + nonce
 
-This project follows a simplified E2EE model:
+---
 
-- Encryption happens entirely on the client
-- Server (future WebSocket server) acts only as a message relay
-- Private keys never leave the user's device
-- Messages are encrypted using public-key cryptography
+## 🔐 crypto/decrypt.js
+- Decrypts incoming message
+- Uses sender public key + own secret key
+- Returns plaintext message
 
-⚠️ This is a learning/demo project, not production-secure messaging.
+---
+
+## 🧾 utils/fingerprint.js
+- Converts public key into short readable hash
+- Used for identity verification between users
+
+---
+
+## 💬 components/Chat.jsx
+- UI for messaging
+- Handles encryption before sending
+- Handles decryption on receive
+
+---
+
+## 🔌 hooks/useSocket.js
+- Connects to WebSocket server
+- Sends / receives encrypted messages
+- Acts as transport layer only
+
+---
+
+# 🧪 How it works
+
+## 1. Identity creation
+User generates keypair:
+
+- publicKey → shared
+- secretKey → stored locally
+
+---
+
+## 2. Messaging flow
+
+### Sending:
+
+message → encrypt → send via WebSocket
+
+
+### Receiving:
+
+receive → decrypt → display
+
+
+---
+
+## 3. Security model
+
+- Encryption happens on client
+- Server only forwards encrypted data
+- No plaintext exposure on backend
+
+---
+
+# 🧪 Real Test Results
+
+## 🖥️ Browser 1
+
+
+Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:1:1f:aa
+Chat:
+💬 yut
+💬 8768
+💬 ⚠️ Decryption failed
+
+
+---
+
+## 🖥️ Browser 2
+
+
+Fingerprint: 27:50:87:60:a8:ce:a9:69:e6:14:cd:6
+Chat:
+💬 123
+💬 1231
+
+
+---
+
+## ⚠️ Current Limitation
+
+- No peer mapping (Alice/Bob system missing)
+- Same keys used incorrectly across sessions
+- Decryption fails for cross-user messages
+
+👉 This is expected in Phase 3 (pre-peer architecture)
+
+---
+
+# 📌 Limitations
+
+- No QR-based identity exchange yet
+- No session key agreement
+- No forward secrecy
+- No authentication layer
+- Single-device simulation model
+
+---
+
+# 🚧 Next Phase (Roadmap)
+
+- 📱 QR code identity exchange
+- 👥 Alice ↔ Bob real chat system
+- 🔁 Proper sender/receiver key mapping
+- 🔐 Fix decryption across peers
+- 🧩 Signal-like session architecture
 
 ---
 
 # 🧪 How to run locally
 
-## 1. Clone the project
-
+## 1. Install dependencies
 ```bash
-git clone https://github.com/YOUR_USERNAME/e2ee-chat.git
-cd e2ee-chat
-2. Install dependencies
 npm install
-3. Start development server
+2. Start frontend
 npm run dev
+3. Start backend server
+cd server
+node server.js
 4. Open in browser
 http://localhost:5173
-📌 Current Limitations
-No real backend yet (WebSocket not implemented)
-Single-user simulation only
-No persistent chat storage
-No QR-based key exchange yet
-🚧 Planned Features
-🌐 WebSocket real-time messaging
-📱 QR code-based public key sharing
-👥 Multi-user chat rooms
-🔁 Message encryption + decryption UI
-🧩 Fingerprint verification flow
-🎯 What I learned from this project
-
-This project helped me understand:
-
-Public-key cryptography basics
-End-to-end encryption flow
-Client-side security design
-Separation of UI and crypto logic
-Real-time system architecture basics
 ⚠️ Disclaimer
 
 This project is for educational purposes only.
-It is not intended for production use or real secure communication.
+
+It demonstrates E2EE concepts but is NOT production-grade secure messaging.
 
 👨‍💻 Author
 
-Built as a learning project exploring secure communication systems and cryptography fundamentals.
+Built as a learning project exploring:
 
-
----
-
-#
+Cryptography fundamentals
+Secure messaging systems
+Real-time web architecture
+Signal-like E2EE design principles

@@ -3,8 +3,8 @@ import * as util from "tweetnacl-util";
 
 export function decryptMessage(data, senderPublicKey, receiverSecretKey) {
   const decrypted = nacl.box.open(
-    data.encrypted,
-    data.nonce,
+    new Uint8Array(data.encrypted),
+    new Uint8Array(data.nonce),
     senderPublicKey,
     receiverSecretKey
   );

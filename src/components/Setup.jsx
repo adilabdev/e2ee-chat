@@ -1,13 +1,13 @@
-import { generateKeyPair } from "../crypto/keys";
-import { getFingerprint } from "../utils/fingerprint";
+import { getOrCreateKeyPair } from "../crypto/keys";
+import { fingerprint } from "../utils/fingerprint";
 
 export default function Setup({ onReady }) {
   const handleCreate = () => {
-    const keys = generateKeyPair();
+    const keys = getOrCreateKeyPair();
 
-    const fingerprint = getFingerprint(keys.publicKey);
+    const fp = fingerprint(keys.publicKey);
 
-    onReady(keys, fingerprint);
+    onReady(keys, fp);
   };
 
   return (
