@@ -1,15 +1,14 @@
-const WebSocket = require("ws");
+import { WebSocketServer } from "ws";
 
-const wss = new WebSocket.Server({ port: 3000 });
+const wss = new WebSocketServer({ port: 3000 });
 
 wss.on("connection", (ws) => {
   console.log("Client connected");
 
-  ws.on("message", (data) => {
-    // gelen mesajı herkese ilet
+  ws.on("message", (message) => {
     wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(data.toString());
+      if (client !== ws && client.readyState === 1) {
+        client.send(message.toString());
       }
     });
   });

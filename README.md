@@ -1,54 +1,6 @@
-KOPYALA / YAPIŞTIR
-
-# 🔐 E2EE Chat (Signal-lite Educational Project)
-
-A real-time **End-to-End Encrypted (E2EE) chat system** built with React, Vite, WebSocket, and TweetNaCl.
-
-This project demonstrates how secure messaging applications (like Signal) work internally:
-identity generation, encryption flow, message transport separation, and cryptographic design principles.
-
----
-
-# 🚀 Features
-
-- 🔐 Public / Private key generation (NaCl box cryptography)
-- 🧾 Persistent identity stored in browser (localStorage)
-- 🧠 Fingerprint-based identity verification system
-- 💬 End-to-end encrypted messaging (client-side encryption)
-- 🌐 WebSocket real-time message relay (server cannot read messages)
-- 🔒 Separation of encryption layer and transport layer
-- ⚡ React + Vite modern frontend architecture
-
----
-
-# ⚙️ Tech Stack
-
-## Frontend
-- React (UI framework)
-- Vite (build tool / dev server)
-- JavaScript (ES6)
-
-## Cryptography
-- TweetNaCl (public-key cryptography)
-- NaCl.box (authenticated encryption)
-- nonce-based encryption (prevents replay attacks)
-
-## Communication
-- WebSocket (Node.js server)
-- real-time message relay (no message inspection)
-
----
-
-# 🧠 System Architecture
-
-
-User A (Browser)
-↓ encrypt(message, User B publicKey)
-WebSocket Server (relay only - no decryption)
 ↓
 User B (Browser)
 ↓ decrypt(message, User A publicKey)
-
 
 👉 Important:
 The server NEVER sees plaintext messages.
@@ -57,27 +9,22 @@ The server NEVER sees plaintext messages.
 
 # 🧾 Fingerprint System (Identity Verification)
 
-Each user has a cryptographic identity based on a keypair:
+Each user has a cryptographic identity:
 
-- Public Key → shared with others
-- Private Key → stays in browser (never shared)
+- Public Key → shared
+- Private Key → stays in browser
 
-## 🔍 What is Fingerprint?
-
-A fingerprint is a **short human-readable representation of a public key**.
-
-Example:
-
-Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:1:1f:aa
+## 🔍 Fingerprint Example
 
 
-## 🎯 Purpose:
+21:ba:c0:77:24:62:8f:28:a8:01:1f:aa
 
-- Verify identity between users manually
-- Prevent impersonation attacks
-- Used like “security code” in Signal
 
-👉 If two users see same fingerprint = identity is trusted
+## 🎯 Purpose
+
+- Manual identity verification
+- Prevent impersonation
+- Simulates Signal safety number
 
 ---
 
@@ -86,184 +33,202 @@ Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:1:1f:aa
 
 e2ee-chat/
 │
-├── public/
-│
 ├── server/
-│ └── server.js # WebSocket relay server (no encryption logic)
+│ └── server.js # WebSocket relay server
 │
 ├── src/
-│ │
-│ ├── components/
-│ │ ├── Setup.jsx # Identity creation screen
-│ │ ├── Chat.jsx # Chat UI + messaging logic
-│ │
-│ ├── crypto/
-│ │ ├── keys.js # Keypair generation + persistence
-│ │ ├── encrypt.js # Message encryption (nacl.box)
-│ │ ├── decrypt.js # Message decryption
-│ │
-│ ├── utils/
-│ │ ├── fingerprint.js # Public key → fingerprint generator
-│ │
-│ ├── hooks/
-│ │ ├── useSocket.js # WebSocket communication layer
-│ │
-│ ├── App.jsx
-│ ├── main.jsx
 │
-├── package.json
-└── vite.config.js
+│ ├── components/
+│ │ ├── Setup.jsx # Identity creation
+│ │ └── Chat.jsx # Chat UI + logic
+│
+│ ├── crypto/
+│ │ ├── keys.js
+│ │ ├── encrypt.js
+│ │ └── decrypt.js
+│
+│ ├── hooks/
+│ │ └── useSocket.js
+│
+│ ├── utils/
+│ │ └── fingerprint.js
+│
+│ ├── App.jsx
+│ └── main.jsx
 
 
 ---
 
 # 🧠 Module Responsibilities
 
-## 🔐 crypto/keys.js
-- Generates public/private keypair
+## 🔐 keys.js
+- Generates keypair
 - Stores identity in localStorage
-- Ensures persistent identity per browser
+- Provides persistent identity per browser
 
 ---
 
-## 🔐 crypto/encrypt.js
-- Encrypts message using receiver public key
-- Uses sender secret key for authentication
-- Outputs encrypted payload + nonce
+## 🔐 encrypt.js
+- Encrypts message using:
+  - receiver public key
+  - sender secret key
+- Outputs:
+  - encrypted payload
+  - nonce
 
 ---
 
-## 🔐 crypto/decrypt.js
-- Decrypts incoming message
-- Uses sender public key + own secret key
-- Returns plaintext message
+## 🔐 decrypt.js
+- Decrypts message using:
+  - sender public key
+  - receiver secret key
+- Returns plaintext or null
 
 ---
 
-## 🧾 utils/fingerprint.js
-- Converts public key into short readable hash
-- Used for identity verification between users
+## 🧾 fingerprint.js
+- Converts public key into readable string
+- Used for identity verification
 
 ---
 
-## 💬 components/Chat.jsx
-- UI for messaging
+## 💬 Chat.jsx
+- Displays messages
 - Handles encryption before sending
-- Handles decryption on receive
+- Handles decryption after receiving
+- Allows manual peer key input
 
 ---
 
-## 🔌 hooks/useSocket.js
-- Connects to WebSocket server
-- Sends / receives encrypted messages
-- Acts as transport layer only
+## 🔌 useSocket.js
+- Manages WebSocket connection
+- Sends / receives messages
+- Transport layer only
 
 ---
 
-# 🧪 How it works
+# 🧪 Message Flow
 
-## 1. Identity creation
-User generates keypair:
-
-- publicKey → shared
-- secretKey → stored locally
-
----
-
-## 2. Messaging flow
-
-### Sending:
+## 📤 Sending
 
 message → encrypt → send via WebSocket
 
-
-### Receiving:
+## 📥 Receiving
 
 receive → decrypt → display
 
+---
+
+# 🔐 Security Model
+
+- Encryption is client-side
+- Server only relays encrypted data
+- Private keys never leave device
+- Uses public-key cryptography
 
 ---
 
-## 3. Security model
+# 🧪 Current Output (Real Test)
 
-- Encryption happens on client
-- Server only forwards encrypted data
-- No plaintext exposure on backend
-
----
-
-# 🧪 Real Test Results
-
-## 🖥️ Browser 1
+## 🖥️ Browser A
 
 
-Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:1:1f:aa
-Chat:
-💬 yut
-💬 8768
+Fingerprint: 27:50:87:60:a8:ce:a9:69:e6:14:cd:06
+
+Chat
+Your Public Key:
+[39,80,135,96,168,206,169,105,230,20,205,6,161,59,114,48,72,131,37,143,76,188,238,193,216,168,93,170,255,28,213,110]
+
+[33,186,192,119,36,98,143,40,168,1,31,170,222,200,149,146,195,146,114,255,143,122,203,41,13,98,247,53,79,83,248,17]
+
+Set Peer Key
+
 💬 ⚠️ Decryption failed
+💬 asdasd
+
+Send
 
 
 ---
 
-## 🖥️ Browser 2
+## 🖥️ Browser B
 
 
-Fingerprint: 27:50:87:60:a8:ce:a9:69:e6:14:cd:6
-Chat:
-💬 123
-💬 1231
+Fingerprint: 21:ba:c0:77:24:62:8f:28:a8:01:1f:aa
+
+Chat
+Your Public Key:
+[33,186,192,119,36,98,143,40,168,1,31,170,222,200,149,146,195,146,114,255,143,122,203,41,13,98,247,53,79,83,248,17]
+
+[39,80,135,96,168,206,169,105,230,20,205,6,161,59,114,48,72,131,37,143,76,188,238,193,216,168,93,170,255,28,213,110]
+
+Set Peer Key
+
+💬 [33,186,192,119,...]
+💬 asdadaf
+
+Send
 
 
 ---
 
-## ⚠️ Current Limitation
+# ⚠️ Current Limitations (IMPORTANT)
 
-- No peer mapping (Alice/Bob system missing)
-- Same keys used incorrectly across sessions
-- Decryption fails for cross-user messages
+- ❌ Broadcast messaging (no direct routing)
+- ❌ No peer identity mapping (A ↔ B not fixed)
+- ❌ Wrong key usage can break decryption
+- ❌ Messages may go to unintended peer
+- ❌ No session-based encryption
 
-👉 This is expected in Phase 3 (pre-peer architecture)
+## ❗ Why "Decryption failed" happens
+
+Example scenario:
+
+- User A starts chat with User B
+- But then encrypts using **wrong public key**
+- Message still delivered (server broadcasts)
+- Receiver tries to decrypt with wrong key → FAIL
+
+👉 This is expected in current architecture
 
 ---
 
-# 📌 Limitations
+# 🧠 Root Cause
 
-- No QR-based identity exchange yet
-- No session key agreement
-- No forward secrecy
-- No authentication layer
-- Single-device simulation model
+- No user-to-user mapping
+- No conversation isolation
+- No key validation per message
 
 ---
 
-# 🚧 Next Phase (Roadmap)
+# 🚧 Next Phase (PHASE 4)
 
-- 📱 QR code identity exchange
-- 👥 Alice ↔ Bob real chat system
-- 🔁 Proper sender/receiver key mapping
-- 🔐 Fix decryption across peers
-- 🧩 Signal-like session architecture
+- 👥 Client A ↔ Client B identity mapping
+- 🎯 Direct messaging (no broadcast)
+- 🔐 Correct sender/receiver key pairing
+- 📱 QR-based key exchange
+- 🧠 Session-based encryption upgrade
 
 ---
 
 # 🧪 How to run locally
 
-## 1. Install dependencies
+## 1. Install
+
 ```bash
 npm install
 2. Start frontend
 npm run dev
-3. Start backend server
+3. Start server
 cd server
 node server.js
-4. Open in browser
-http://localhost:5173
+4. Open browser
+http://localhost:5174
 ⚠️ Disclaimer
 
 This project is for educational purposes only.
 
-It demonstrates E2EE concepts but is NOT production-grade secure messaging.
+It demonstrates E2EE concepts but is NOT production-ready secure messaging.
 
 👨‍💻 Author
 
@@ -271,5 +236,5 @@ Built as a learning project exploring:
 
 Cryptography fundamentals
 Secure messaging systems
-Real-time web architecture
-Signal-like E2EE design principles
+Real-time architectures
+Signal-like E2EE design

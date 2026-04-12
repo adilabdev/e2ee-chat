@@ -21,10 +21,7 @@ function App() {
     <div>
       <h3>Fingerprint: {fingerprint}</h3>
 
-      <Chat
-        keys={keys}
-        receiverPublicKey={keys.publicKey} // şimdilik self-chat
-      />
+      <Chat keys={keys} />
     </div>
   );
 }

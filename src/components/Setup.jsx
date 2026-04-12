@@ -4,7 +4,6 @@ import { fingerprint } from "../utils/fingerprint";
 export default function Setup({ onReady }) {
   const handleCreate = () => {
     const keys = getOrCreateKeyPair();
-
     const fp = fingerprint(keys.publicKey);
 
     onReady(keys, fp);

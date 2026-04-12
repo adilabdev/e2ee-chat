@@ -7,10 +7,16 @@ export default function Chat({ keys }) {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
+  const [peerKeyInput, setPeerKeyInput] = useState("");
+  const [peerPublicKey, setPeerPublicKey] = useState(null);
+
+  /**
+   * 📥 RECEIVE
+   */
   const { send } = useSocket((data) => {
     const decrypted = decryptMessage(
       data,
-      keys.publicKey,
+      data.senderPublicKey,
       keys.secretKey
     );
 
@@ -20,14 +26,45 @@ export default function Chat({ keys }) {
     ]);
   });
 
+  /**
+   * 🔑 Peer key ayarla
+   */
+  const handleSetPeerKey = () => {
+    try {
+      const parsed = JSON.parse(peerKeyInput);
+
+      if (!Array.isArray(parsed) || parsed.length !== 32) {
+        throw new Error();
+      }
+
+      setPeerPublicKey(new Uint8Array(parsed));
+      alert("Peer key set edildi ✅");
+    } catch {
+      alert("Geçersiz key ❌ (32 elemanlı array olmalı)");
+    }
+  };
+
+  /**
+   * 📤 SEND
+   */
   const sendMessage = () => {
+    if (!peerPublicKey) {
+      alert("Peer public key yok!");
+      return;
+    }
+
     const encrypted = encryptMessage(
       message,
-      keys.publicKey,
+      peerPublicKey,
       keys.secretKey
     );
 
-    send(encrypted);
+    send({
+      encrypted: encrypted.encrypted,
+      nonce: encrypted.nonce,
+      senderPublicKey: Array.from(keys.publicKey),
+    });
+
     setMessage("");
   };
 
@@ -35,12 +72,35 @@ export default function Chat({ keys }) {
     <div>
       <h2>Chat</h2>
 
+      {/* 🔐 Kendi key */}
       <div>
+        <strong>Your Public Key:</strong>
+        <pre style={{ fontSize: 10 }}>
+          {JSON.stringify(Array.from(keys.publicKey))}
+        </pre>
+      </div>
+
+      {/* 🔑 Peer key */}
+      <textarea
+        placeholder="Paste peer public key"
+        value={peerKeyInput}
+        onChange={(e) => setPeerKeyInput(e.target.value)}
+        rows={3}
+        style={{ width: "100%", marginTop: 10 }}
+      />
+
+      <button onClick={handleSetPeerKey}>
+        Set Peer Key
+      </button>
+
+      {/* 💬 Messages */}
+      <div style={{ marginTop: 20 }}>
         {messages.map((m, i) => (
           <div key={i}>💬 {m}</div>
         ))}
       </div>
 
+      {/* ✍️ Input */}
       <input
         value={message}
         onChange={(e) => setMessage(e.target.value)}
