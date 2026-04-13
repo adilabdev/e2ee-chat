@@ -1,19 +1,19 @@
 import nacl from "tweetnacl";
-import * as util from "tweetnacl-util";
 
 export function decryptMessage(data, senderPublicKey, receiverSecretKey) {
   try {
-    const decrypted = nacl.box.open(
+    const message = nacl.box.open(
       new Uint8Array(data.encrypted),
       new Uint8Array(data.nonce),
       new Uint8Array(senderPublicKey),
       receiverSecretKey
     );
 
-    if (!decrypted) return null;
+    if (!message) return null;
 
-    return util.encodeUTF8(decrypted);
+    return new TextDecoder().decode(message);
   } catch (err) {
+    console.error("decrypt error:", err);
     return null;
   }
 }

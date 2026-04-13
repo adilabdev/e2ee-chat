@@ -1,4 +1,4 @@
-import { getOrCreateKeyPair } from "../crypto/keys";
+import { getOrCreateKeyPair } from "../e2ee/keys";
 import { fingerprint } from "../utils/fingerprint";
 
 export default function Setup({ onReady }) {
