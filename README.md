@@ -1,103 +1,96 @@
-# 🔐 E2EE Chat Application (Phase 1 - Broadcast Baseline)
+# E2EE Chat (Phase 2 - MVP)
 
-## 📌 Overview
-
-This project is a real-time encrypted chat system built using:
-
-- WebSocket (real-time transport layer)
-- TweetNaCl (public-key encryption)
-- React (frontend UI)
-- Node.js (backend relay server)
-
-This current version represents **Phase 1: Broadcast Chat Foundation**.
+This is a real-time multi-user chat prototype built with WebSocket and React.
 
 ---
 
-## 🧠 Why this project exists
+## 🚀 What This Project Does
 
-The goal is to build a **Signal-like end-to-end encrypted messaging system** step by step.
+This phase implements a **working chat system prototype** with:
 
-This phase focuses on:
-
-- establishing real-time communication
-- implementing cryptographic identity
-- validating encrypted message flow between multiple clients
-
----
-
-## ⚙️ Current Features
-
-### 💬 Messaging
-- real-time WebSocket messaging
-- broadcast-based message delivery
-- basic chat UI with input + message list
-
-### 🔐 Cryptography (E2EE foundation)
-- nacl.box encryption/decryption
-- per-user keypair generation
-- localStorage persistence
-- nonce-based encryption
-
-### 👤 Identity
-- simple user system (A, B, C, D)
-- fingerprint generation from public key
-- manual peer key handling (temporary dev solution)
+- Multiple users (A, B, C, D test environment)
+- Real-time messaging via WebSocket
+- Conversation-based chat UI
+- Persistent chat grouping per user pair
 
 ---
 
-## 📺 Example Flow (Current System)
+## 🧠 Why This Architecture Exists
 
-1. User A logs in
-2. User B logs in in another browser
-3. Both generate keypairs
-4. Messages are sent via WebSocket broadcast
-5. Each client attempts decryption locally
-6. Messages appear in UI (if decrypt succeeds)
+Earlier version had:
+- global message broadcast
+- no conversation separation
+- no active chat selection
 
----
-
-## 🖥️ Current UI Behavior
-
-- All users see all messages (broadcast mode)
-- No private rooms yet
-- Chat selection is UI-only (not backend isolated)
-- Messages are labeled by sender only
+This caused:
+- mixed messages between users
+- no proper chat UX
+- impossible scaling toward rooms or DB
 
 ---
 
-## ⚠️ Known Limitations
+## 🔧 What Changed in Phase 2
 
-- No direct message routing (all messages are broadcast)
-- No authentication system
-- No chat rooms or conversations
-- No server-side encryption awareness
-- Manual peer key exchange required
+### 1. Conversation-based model
+Messages are now grouped by:
 
----
+A-B, B-C, C-D ...
 
-## 🚀 Next Phase Goals (Phase 2)
 
-- implement true DM system (A ↔ B isolation)
-- introduce conversation state management
-- build room-based routing on server
-- separate chat threads per user
-- prepare structure for group chats
+This simulates real chat apps like WhatsApp.
 
 ---
 
-## 🧭 Long-term Vision
-
-- secure multi-user messaging platform
-- group chats with E2EE
-- QR-based key exchange
-- authentication + user accounts
-- Signal-style session encryption model
+### 2. Active chat system
+Users now:
+- select a person from user list
+- open a dedicated chat window
+- see only that conversation
 
 ---
 
-## 🧪 Tech Stack
+### 3. UI separation
 
-- React
-- Node.js
-- ws (WebSocket)
-- tweetnacl
+- Users panel → who exists
+- Chats panel → active conversations
+- Message window → current chat only
+
+---
+
+### 4. Real-time messaging fix
+Messages are now:
+- routed per user
+- stored per conversation
+- displayed only in correct context
+
+---
+
+## 📦 Current Limitations
+
+- No authentication
+- No database persistence
+- No encryption enforcement in UI layer yet (E2EE will be re-integrated later)
+- Users are static (A, B, C, D only)
+
+---
+
+## 🔮 Next Steps (Phase 3)
+
+Planned upgrades:
+
+- 🔐 real E2EE integration (session-based keys)
+- 🧾 persistent storage (DB or IndexedDB)
+- 👥 group chat / room system
+- 🔎 dynamic user system (@username, email)
+- 🟢 online/offline presence
+- ⚡ message sync across sessions
+
+---
+
+## 🧪 Current Test Flow
+
+1. Open app in multiple tabs
+2. Login as different users (A/B/C/D)
+3. Select a user from left panel
+4. Send message
+5. Observe real-time sync between clients
