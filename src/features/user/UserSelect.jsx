@@ -2,7 +2,7 @@ export default function UserSelect({ onSelect }) {
   const users = ["A", "B", "C", "D"];
 
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <h2>Select User</h2>
 
       {users.map((u) => (

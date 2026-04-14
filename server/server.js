@@ -2,50 +2,45 @@ import { WebSocketServer } from "ws";
 
 const wss = new WebSocketServer({ port: 3000 });
 
-const clients = new Map(); // userId → ws
+// userId -> ws
+const clients = new Map();
 
 wss.on("connection", (ws) => {
   let userId = null;
 
   ws.on("message", (raw) => {
+    let msg;
+
     try {
-      const msg = JSON.parse(raw.toString());
+      msg = JSON.parse(raw.toString());
+    } catch {
+      return;
+    }
 
-      // REGISTER
-      if (msg.type === "register") {
-        userId = msg.userId;
-        clients.set(userId, ws);
+    // REGISTER
+    if (msg.type === "register") {
+      userId = msg.userId;
+      clients.set(userId, ws);
+      console.log("🟢 connected:", userId);
+      return;
+    }
 
-        console.log(`🟢 ${userId} connected`);
-        return;
+    // DIRECT MESSAGE
+    if (msg.type === "message") {
+      const targetWs = clients.get(msg.to);
+
+      if (targetWs?.readyState === 1) {
+        targetWs.send(JSON.stringify(msg));
       }
-
-      // MESSAGE ROUTING
-      if (msg.type === "message") {
-        const targetWs = clients.get(msg.to);
-
-        if (targetWs && targetWs.readyState === 1) {
-          targetWs.send(
-            JSON.stringify({
-              type: "message",
-              from: msg.from,
-              to: msg.to,
-              text: msg.text,
-            })
-          );
-        }
-      }
-    } catch (err) {
-      console.error("Server error:", err);
     }
   });
 
   ws.on("close", () => {
     if (userId) {
       clients.delete(userId);
-      console.log(`🔴 ${userId} disconnected`);
+      console.log("🔴 disconnected:", userId);
     }
   });
 });
 
-console.log("WS server running on ws://localhost:3000");
+console.log("WS server ws://localhost:3000");
