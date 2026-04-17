@@ -1,27 +1,13 @@
-export default function MessageList({ store, user }) {
-  const peer = store.activeChat;
-
-  if (!peer) {
-    return (
-      <div style={{ padding: 20 }}>
-        👈 Select a user to start chat
-      </div>
-    );
-  }
-
-  const messages = store.getMessages(user, peer);
+export default function MessageList({ messages }) {
+  const sorted = [...messages].sort((a, b) => a.timestamp - b.timestamp);
 
   return (
-    <div style={{ padding: 10 }}>
-      {messages.length === 0 ? (
-        <p>No messages yet</p>
-      ) : (
-        messages.map((m, i) => (
-          <div key={i}>
-            <b>{m.from}:</b> {m.text}
-          </div>
-        ))
-      )}
+    <div>
+      {sorted.map((m) => (
+        <div key={m.id}>
+          {m.from}: {m.content} ({m.status})
+        </div>
+      ))}
     </div>
   );
 }

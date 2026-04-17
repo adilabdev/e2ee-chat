@@ -1,52 +1,42 @@
-export default function ConversationList({ store, user }) {
-  const users = ["A", "B", "C", "D"];
-
-  const startChat = (peer) => {
-    store.setActiveChat(peer);
-  };
+export default function ConversationList({ store, user, setTarget }) {
+  const users = ["A", "B", "C", "D"].filter(u => u !== user);
 
   return (
-    <div style={{ width: 200, borderRight: "1px solid #ddd", padding: 10 }}>
+    <div style={{ width: 200 }}>
       <h4>Users</h4>
 
-      {users
-        .filter((u) => u !== user)
-        .map((u) => (
-          <div
-            key={u}
-            style={{
-              cursor: "pointer",
-              padding: 6,
-              background: store.activeChat === u ? "#eee" : "transparent",
-            }}
-            onClick={() => startChat(u)}
-          >
-            👤 {u}
-          </div>
-        ))}
+      {users.map((u) => (
+        <div key={u} onClick={() => {
+          store.setActiveChat(u);
+          setTarget(u);
+        }}>
+          👤 {u}
+        </div>
+      ))}
 
       <hr />
 
       <h4>Chats</h4>
 
       {Object.keys(store.conversations).length === 0 && (
-        <p style={{ fontSize: 12 }}>No chats yet</p>
+        <p>No chats yet</p>
       )}
 
-      {Object.keys(store.conversations).map((id) => {
-        const [a, b] = id.split("-");
-        const peer = a === user ? b : a;
+      {Object.entries(store.conversations)
+        .sort((a, b) => b[1].lastMessageAt - a[1].lastMessageAt)
+        .map(([id, conv]) => {
+          const [a, b] = id.split("-");
+          const peer = a === user ? b : a;
 
-        return (
-          <div
-            key={id}
-            onClick={() => store.setActiveChat(peer)}
-            style={{ cursor: "pointer", padding: 5 }}
-          >
-            💬 {peer}
-          </div>
-        );
-      })}
+          return (
+            <div key={id} onClick={() => {
+              store.setActiveChat(peer);
+              setTarget(peer);
+            }}>
+              💬 {peer} - {conv.lastMessage}
+            </div>
+          );
+        })}
     </div>
   );
 }

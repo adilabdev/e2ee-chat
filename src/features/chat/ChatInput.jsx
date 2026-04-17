@@ -1,24 +1,21 @@
 import { useState } from "react";
+import { createMessage } from "./messageService";
 
 export default function ChatInput({ store, user, send }) {
   const [text, setText] = useState("");
   const peer = store.activeChat;
 
   const handleSend = () => {
-    if (!peer) {
-      alert("Select user first");
-      return;
-    }
+    if (!peer || !text.trim()) return;
 
-    const msg = {
-      type: "message",
+    const msg = createMessage({
       from: user,
       to: peer,
-      text,
-    };
+      content: text,
+    });
 
+    store.addMessage(msg); // optimistic
     send(msg);
-    store.addMessage(msg);
 
     setText("");
   };
@@ -27,9 +24,8 @@ export default function ChatInput({ store, user, send }) {
     <div style={{ display: "flex", gap: 10 }}>
       <input
         value={text}
-        disabled={!peer}
         onChange={(e) => setText(e.target.value)}
-        placeholder={peer ? "Message..." : "Select user first"}
+        placeholder="Message..."
       />
       <button onClick={handleSend}>Send</button>
     </div>

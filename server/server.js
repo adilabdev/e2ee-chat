@@ -2,35 +2,38 @@ import { WebSocketServer } from "ws";
 
 const wss = new WebSocketServer({ port: 3000 });
 
-// userId -> ws
-const clients = new Map();
+const clients = new Map(); // userId -> ws
+
+console.log("🚀 WS running on ws://localhost:3000");
 
 wss.on("connection", (ws) => {
   let userId = null;
 
-  ws.on("message", (raw) => {
-    let msg;
+  console.log("🟢 Client connected");
 
-    try {
-      msg = JSON.parse(raw.toString());
-    } catch {
-      return;
-    }
+  ws.on("message", (raw) => {
+    const data = JSON.parse(raw.toString());
+
+    console.log("📩 RAW:", data);
 
     // REGISTER
-    if (msg.type === "register") {
-      userId = msg.userId;
+    if (data.type === "register") {
+      userId = data.userId;
       clients.set(userId, ws);
-      console.log("🟢 connected:", userId);
+
+      console.log(`✅ ${userId} registered`);
       return;
     }
 
-    // DIRECT MESSAGE
-    if (msg.type === "message") {
-      const targetWs = clients.get(msg.to);
+    // MESSAGE ROUTING
+    if (data.type === "text") {
+      const target = clients.get(data.to);
 
-      if (targetWs?.readyState === 1) {
-        targetWs.send(JSON.stringify(msg));
+      if (target && target.readyState === 1) {
+        target.send(JSON.stringify(data));
+        console.log(`📤 ${data.from} → ${data.to}`);
+      } else {
+        console.log(`❌ ${data.to} offline`);
       }
     }
   });
@@ -38,9 +41,8 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     if (userId) {
       clients.delete(userId);
-      console.log("🔴 disconnected:", userId);
+      console.log(`🔴 ${userId} disconnected`);
     }
   });
 });
-
-console.log("WS server ws://localhost:3000");
+//kalsın
