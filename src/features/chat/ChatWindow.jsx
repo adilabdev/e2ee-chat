@@ -2,28 +2,59 @@ import { useEffect } from "react";
 import ChatInput from "./ChatInput";
 import MessageList from "./MessageList";
 
-export default function ChatWindow({ store, user, target, send }) {
-  if (!target) return <div>Select user</div>;
+export default function ChatWindow({
+  store,
+  user,
+  send,
+}) {
+  const target = store.activeChat;
 
-  const conversationId = [user, target].sort().join("-");
-  const messages = store.conversations[conversationId]?.messages || [];
+  if (!target) {
+    return <div>Select user</div>;
+  }
 
-  // 🔥 READ STATUS
+  const conversationId = [user, target]
+    .sort()
+    .join("-");
+
+  const messages =
+    store.conversations[conversationId]
+      ?.messages || [];
+
+  // READ EVENT
   useEffect(() => {
     messages.forEach((m) => {
-      if (m.to === user && m.status !== "read") {
-        m.status = "read";
+      if (
+        m.from === target &&
+        !m.readAt
+      ) {
+        send({
+          type: "read",
+          to: target,
+          messageId: m.id,
+        });
+
+        store.updateMessage(m.id, {
+          readAt: Date.now(),
+        });
       }
     });
-  }, [target]);
+  }, [messages]);
 
   return (
     <div style={{ flex: 1 }}>
       <h3>Chat with {target}</h3>
 
-      <MessageList messages={messages} />
+      <MessageList
+        messages={messages}
+        currentUser={user}
+      />
 
-      <ChatInput store={store} user={user} send={send} />
+      <ChatInput
+        store={store}
+        user={user}
+        send={send}
+      />
     </div>
   );
 }

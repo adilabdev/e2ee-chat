@@ -5,9 +5,10 @@ export function createMessage({ from, to, content }) {
     from,
     to,
     content,
-    timestamp: Date.now(),
-    status: "sent",
     conversationId: [from, to].sort().join("-"),
-    deleted: false,
+
+    sentAt: Date.now(),
+    deliveredAt: null,
+    readAt: null
   };
 }
