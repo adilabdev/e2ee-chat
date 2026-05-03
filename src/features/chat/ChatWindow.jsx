@@ -1,49 +1,74 @@
-import { useEffect } from "react";
-import ChatInput from "./ChatInput";
-import MessageList from "./MessageList";
+import { useEffect }
+from "react";
+
+import {
+  buildConversationId,
+} from "../../core/protocol/conversation";
+
+import MessageList
+from "./MessageList";
+
+import ChatInput
+from "./ChatInput";
 
 export default function ChatWindow({
-  store,
   user,
-  send,
+  store,
+  runtime,
 }) {
-  const target = store.activeChat;
+  const peer =
+    store.activeChat;
 
-  if (!target) {
-    return <div>Select user</div>;
+  if (!peer) {
+    return <div>Select chat</div>;
   }
 
-  const conversationId = [user, target]
-    .sort()
-    .join("-");
+  const conversationId =
+    buildConversationId(
+      user,
+      peer
+    );
+
+  const conversation =
+    store.conversations[
+      conversationId
+    ];
 
   const messages =
-    store.conversations[conversationId]
-      ?.messages || [];
+    conversation
+      ? conversation.messageOrder.map(
+          (id) =>
+            conversation
+              .messagesById[id]
+        )
+      : [];
 
-  // READ EVENT
   useEffect(() => {
     messages.forEach((m) => {
-      if (
-        m.from === target &&
-        !m.readAt
-      ) {
-        send({
-          type: "read",
-          to: target,
-          messageId: m.id,
-        });
+      const shouldRead =
+        m.from === peer &&
+        !m.readAt &&
+        !m.readSent;
 
-        store.updateMessage(m.id, {
-          readAt: Date.now(),
-        });
+      if (!shouldRead) {
+        return;
       }
+
+      runtime.markAsRead({
+        messageId: m.id,
+
+        conversationId,
+
+        to: peer,
+      });
     });
   }, [messages]);
 
   return (
     <div style={{ flex: 1 }}>
-      <h3>Chat with {target}</h3>
+      <h2>
+        Chat with {peer}
+      </h2>
 
       <MessageList
         messages={messages}
@@ -51,9 +76,9 @@ export default function ChatWindow({
       />
 
       <ChatInput
-        store={store}
         user={user}
-        send={send}
+        peer={peer}
+        runtime={runtime}
       />
     </div>
   );

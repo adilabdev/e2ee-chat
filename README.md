@@ -1,358 +1,456 @@
-# E2EE Chat (Phase 3 - Chat Engine)
+information: An LLM helped me with the README file.
 
-This is a real-time multi-user chat prototype built with WebSocket and React.
+# E2EE Chat Engine
 
----
+A realtime messaging engine prototype built with React, WebSocket and a protocol-oriented architecture designed for long-term scalability.
 
-# 🚀 What This Project Does
+This project is not a simple “chat app UI”.
 
-This phase upgrades the application into a more complete realtime chat engine with:
+It is an attempt to build a production-oriented realtime messaging foundation that can evolve toward:
 
-* Multiple users (A, B, C, D test environment)
-* Direct user-to-user WebSocket messaging
-* Conversation-based chat system
-* Optimistic UI updates
-* Realtime delivery & read receipts
-* Conversation sorting by recent activity
-* Structured message lifecycle tracking
-* Scalable chat architecture
+- end-to-end encryption
+- offline synchronization
+- mobile compatibility
+- persistent storage
+- scalable conversation systems
+- event-driven networking
 
----
-
-# 🧠 Why This Architecture Exists
-
-Earlier versions had:
-
-* global message handling
-* unstable realtime synchronization
-* inconsistent conversation rendering
-* duplicated or missing messages
-* weak message structure
-
-This caused:
-
-* messages not appearing reliably
-* broken synchronization between clients
-* difficult debugging
-* impossible scaling toward persistence or E2EE
-* poor foundation for future features
+The focus of the project is architecture, deterministic message flow and future-proof system design.
 
 ---
 
-# 🔧 What Changed in Phase 3
+# Project Vision
 
-## 1. Standardized Message Model
+Most beginner realtime chat projects become difficult to maintain after adding:
 
-Messages now use a consistent structure:
+- delivery receipts
+- read receipts
+- reconnect logic
+- offline handling
+- persistence
+- multiple devices
+- encryption
+- media transfer
+- mobile support
 
-```js
-{
-  id,
-  type,
-  from,
-  to,
-  content,
-  timestamp,
-  status,
-  conversationId,
-  deleted,
-  sentAt,
-  deliveredAt,
-  readAt
-}
+The reason is usually tight coupling between:
+
+- UI
+- socket logic
+- message state
+- protocol logic
+- transport logic
+
+This project intentionally separates these concerns from the beginning.
+
+The goal is building a messaging engine that can gradually evolve into a Signal/Telegram/WhatsApp-style architecture without requiring large rewrites later.
+
+---
+
+# Current Features
+
+## Realtime Messaging
+
+- realtime user-to-user WebSocket communication
+- direct socket routing
+- isolated conversation system
+- optimistic UI updates
+
+---
+
+## Structured Message Lifecycle
+
+Messages support deterministic lifecycle transitions:
+
+```txt
+PENDING → SENT → DELIVERED → READ
 ```
+
+Each message tracks:
+
+- sentAt
+- deliveredAt
+- readAt
 
 This enables:
 
-* message lifecycle tracking
-* future database storage
-* delivery acknowledgements
-* read receipts
-* duplicate prevention
+- realtime receipts
+- synchronization
+- future persistence
+- analytics/debugging
 
 ---
 
-## 2. Deterministic Conversation System
+## Conversation-based Architecture
 
-Each conversation is uniquely identified using:
+Conversations are uniquely generated using:
 
 ```js
-[from, to].sort().join("-")
+[a, b].sort().join("-")
 ```
 
 Examples:
 
-* A-B
-* A-C
-* B-D
+```txt
+A-B
+A-C
+B-D
+```
 
-This guarantees:
+Benefits:
 
-* consistent conversation IDs
-* no duplicate chats
-* stable message grouping
+- deterministic conversation IDs
+- no duplicate conversations
+- stable grouping
+- database compatibility
 
 ---
 
-## 3. Conversation-based State Management
+## Normalized-ish State Structure
 
-The application no longer uses a global message array.
-
-Instead:
+Instead of a single global messages array:
 
 ```js
 conversations = {
   "A-B": {
-    messages: [],
-    lastMessageAt
+    messagesById: {},
+    messageOrder: []
   }
 }
 ```
 
-This enables:
+Benefits:
 
-* isolated chat state
-* scalable architecture
-* easier synchronization
-* database-ready structure
-
----
-
-## 4. Optimistic UI
-
-Messages now appear instantly after sending:
-
-```js
-store.addMessage(message)
-send(message)
-```
-
-This creates:
-
-* instant visual feedback
-* smoother UX
-* modern chat behavior
+- easier updates
+- deterministic rendering
+- scalable state management
+- simpler sync logic
 
 ---
 
-## 5. Realtime Message Lifecycle
+## Runtime Separation
 
-Messages now support realtime state transitions:
+The architecture separates:
+
+- protocol layer
+- transport layer
+- runtime engine
+- UI feature layer
+
+This keeps business logic outside React UI components.
+
+Benefits:
+
+- easier testing
+- easier debugging
+- mobile portability
+- lower coupling
+
+---
+
+## Mobile-ready Foundation
+
+The project structure is intentionally designed to support future migration toward:
+
+- React Native
+- Expo
+- Electron
+
+The protocol and runtime layers are mostly platform-independent.
+
+---
+
+# Folder Structure
 
 ```txt
-sent → delivered → read
-```
-
-The system tracks:
-
-* when sender created the message
-* when receiver received it
-* when receiver opened/read the chat
-
----
-
-## 6. Delivery & Read Receipts
-
-The server now sends realtime events:
-
-### Delivered
-
-```js
-{
-  type: "delivered",
-  messageId
-}
-```
-
-### Read
-
-```js
-{
-  type: "read",
-  messageId
-}
-```
-
-This enables synchronized lifecycle updates between users.
-
----
-
-## 7. Lifecycle Timestamp Tracking
-
-Every message now stores:
-
-* sentAt
-* deliveredAt
-* readAt
-
-The UI displays lifecycle timestamps in realtime.
-
-Example:
-
-```txt
-sent: 12:15:22
-delivered: 12:15:23
-read: 12:15:30
+src/
+│
+├── app/                  # app bootstrap
+│
+├── core/                 # platform-independent core logic
+│   ├── constants/
+│   └── protocol/
+│
+├── network/              # socket/network implementations
+│   └── socket/
+│
+├── runtime/              # realtime engine/runtime logic
+│   ├── engine/
+│   └── store/
+│
+├── features/             # UI feature layer
+│   ├── chat/
+│   └── user/
+│
+├── shared/               # shared utilities/hooks
+│
+└── server/               # websocket relay server
 ```
 
 ---
 
-## 8. Direct Socket Routing
+# Why This Structure Exists
 
-Previous versions partially behaved like broadcasts.
+This structure was intentionally chosen to avoid future architectural collapse.
 
-Now messages are routed directly:
+Typical small chat projects often mix:
 
-```js
-clients.get(targetUser)
-```
+- websocket code
+- UI state
+- business rules
+- lifecycle logic
+- rendering logic
 
-This fixes:
+inside React components.
 
-* incorrect message rendering
-* duplicate updates
-* cross-user message leaks
+That becomes extremely difficult to scale once features like:
 
----
+- retries
+- reconnects
+- persistence
+- encryption
+- media uploads
+- multi-device sync
 
-## 9. Chat Sorting by Recent Activity
+are introduced.
 
-Conversations are sorted using:
-
-```js
-lastMessageAt
-```
-
-Result:
-
-* newest conversations appear on top
-* more realistic messaging UX
+This project avoids that problem early by separating responsibilities.
 
 ---
 
-## 10. Improved UI Architecture
+# Architectural Principles
 
-Chat UI is now separated into dedicated components:
+## 1. Protocol-first Design
 
-* ChatShell
-* ConversationList
-* ChatWindow
-* MessageList
-* ChatInput
+The protocol layer defines:
 
-This improves:
+- events
+- message schema
+- conversation rules
+- lifecycle contracts
 
-* maintainability
-* scalability
-* debugging
-* feature expansion
+This makes the messaging system deterministic and portable.
 
 ---
 
-# 🧪 Example Realtime Lifecycle
-
-### Sender View
-
-```txt
-B: hey are you free tonight?
-sent: 11:59:37
-delivered: 11:59:37
-read: 11:59:45
-```
-
-### Receiver View
-
-```txt
-B: hey are you free tonight?
-delivered: 11:59:37
-read: 11:59:45
-```
-
-Another example:
-
-```txt
-C: sure, what time?
-sent: 12:00:09
-delivered: 12:00:09
-read: 12:00:14
-```
-
----
-
-# 📦 Current Limitations
-
-Still missing:
-
-* authentication system
-* persistent database
-* offline message sync
-* online/offline presence
-* last seen tracking
-* group chats
-* file/image messages
-* contact system
+## 2. Stateless Relay Server
 
 Current server behavior:
 
-👉 stateless realtime relay server
+```txt
+stateless websocket relay
+```
+
+The server currently handles:
+
+- socket registration
+- direct routing
+- lifecycle acknowledgements
+
+The server does NOT yet handle:
+
+- authentication
+- persistence
+- queues
+- sync
+- encryption
+
+This is intentional.
+
+The messaging engine is stabilized before introducing backend complexity.
 
 ---
 
-# 🔮 Planned Next Steps (Phase 4)
+## 3. Event-driven Messaging
 
-Planned upgrades:
+The system communicates through structured events:
 
-* 👤 real authentication system
-* 🟢 online/offline presence
-* 🕓 last seen tracking
-* 👥 group conversations
-* 📩 offline message persistence
-* 🔎 dynamic user discovery
-* 🧾 MongoDB integration
-* 🔐 stronger E2EE architecture
+```txt
+REGISTER
+SEND_MESSAGE
+SERVER_ACK
+DELIVERED_ACK
+READ_MESSAGE
+READ_ACK
+```
+
+This prepares the architecture for future:
+
+- retries
+- queues
+- deduplication
+- sync engines
+- encryption transport
 
 ---
 
-# 🧪 Current Test Flow
+## 4. Future E2EE Compatibility
 
-1. Open application in multiple tabs
-2. Login as different users (A/B/C/D)
+The structure intentionally preserves boundaries required for future E2EE implementation.
+
+Especially:
+
+```txt
+core/protocol
+network/
+runtime/
+```
+
+These layers will later host:
+
+- encryption
+- key exchange
+- transport encryption
+- message versioning
+- secure session logic
+
+---
+
+# Current Technical Goals
+
+The current focus is stabilizing:
+
+- deterministic message flow
+- socket lifecycle
+- realtime synchronization
+- conversation isolation
+- event consistency
+
+before introducing persistence and authentication.
+
+---
+
+# Planned Next Steps
+
+## Authentication System
+
+- real user accounts
+- JWT/session handling
+- secure identity layer
+
+---
+
+## Presence System
+
+- online/offline tracking
+- typing indicators
+- last seen
+
+---
+
+## Reliable Transport Layer
+
+- retry queues
+- ACK tracking
+- reconnect strategy
+- exponential backoff
+- offline delivery
+
+---
+
+## Persistence Layer
+
+- MongoDB/PostgreSQL
+- message storage
+- conversation storage
+- sync engine
+
+---
+
+## Group Messaging
+
+- rooms/groups
+- admin roles
+- permissions
+- mentions
+
+---
+
+## Media System
+
+- image messages
+- video messages
+- file transfer
+- upload transport
+
+---
+
+## End-to-End Encryption
+
+Long-term goal:
+
+- Signal-style encrypted messaging
+- session keys
+- encrypted payload transport
+- zero-knowledge relay server
+
+---
+
+# Current State of the Project
+
+This is currently:
+
+```txt
+Realtime Messaging Engine Prototype
+```
+
+NOT:
+
+- a finished messenger
+- a polished product
+- a complete backend system
+
+The focus is building a clean and scalable messaging core before adding product-level complexity.
+
+---
+
+# Running the Project
+
+## Install dependencies
+
+```bash
+npm install
+```
+
+---
+
+## Start websocket server
+
+```bash
+node server/server.js
+```
+
+---
+
+## Start Vite client
+
+```bash
+npm run dev
+```
+
+---
+
+# Testing
+
+1. Open multiple browser tabs
+2. Login as different users
 3. Open conversations
 4. Send messages
 5. Observe:
 
-   * realtime updates
-   * delivery receipts
-   * read receipts
-   * lifecycle timestamps
-   * conversation sorting
+- realtime delivery
+- read receipts
+- lifecycle transitions
+- conversation sorting
 
 ---
 
-# 🧠 Long-Term Vision
+# Long-term Goal
 
-This project is evolving toward:
+The long-term goal is building a serious realtime messaging architecture capable of evolving toward:
 
-* 🔐 Signal-style E2EE architecture
-* 🧾 persistent backend storage
-* 👥 scalable room/group systems
-* 📱 production-grade realtime messaging
-* ⚡ modern event-driven chat engine
-
----
-
-# ⚠️ Important Note
-
-At this stage:
-
-👉 focus is realtime chat engine architecture
-
-NOT:
-
-* polished UI
-* authentication
-* persistence layer
-
-The primary goal is building a:
-
-scalable, testable, realtime messaging core
+- secure messaging
+- scalable sync systems
+- mobile clients
+- persistent infrastructure
+- production-grade realtime communication

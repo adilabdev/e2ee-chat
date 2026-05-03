@@ -1,42 +1,73 @@
-import { useChatStore } from "./useChatStore";
-import { useSocket } from "../../shared/hooks/useSocket";
-import ChatWindow from "./ChatWindow";
-import ConversationList from "./ConversationList";
+import {
+  useEffect,
+  useRef,
+} from "react";
 
-export default function ChatShell({ user }) {
+import {
+  SocketClient,
+} from "../../network/socket/socket.client";
+
+import {
+  useChatStore,
+} from "../../runtime/store/useChatStore";
+
+import {
+  useChatRuntime,
+} from "./useChatRuntime";
+
+import ConversationList from "./ConversationList";
+import ChatWindow from "./ChatWindow";
+
+export default function ChatShell({
+  user,
+}) {
   const store = useChatStore();
 
-  const { send } = useSocket(user, (data) => {
-    console.log("📡 SOCKET:", data);
+  const socketRef = useRef(null);
 
-    // incoming message
-    if (data.type === "text") {
-      store.addMessage(data);
-    }
+  const runtimeRef = useRef(null);
 
-    // delivered update
-    if (data.type === "delivered") {
-      store.updateMessage(data.messageId, {
-        deliveredAt: data.deliveredAt
+  if (!socketRef.current) {
+    socketRef.current =
+      new SocketClient({
+        userId: user,
+
+        onMessage: (data) => {
+          runtimeRef.current
+            ?.handleSocketEvent(data);
+        },
       });
-    }
+  }
 
-    // read update
-    if (data.type === "read") {
-      store.updateMessage(data.messageId, {
-        readAt: data.readAt
-      });
-    }
-  });
+  const runtime =
+    useChatRuntime({
+      socket: socketRef.current,
+      store,
+    });
+
+  runtimeRef.current = runtime;
+
+  useEffect(() => {
+    socketRef.current.connect();
+  }, []);
 
   return (
-    <div style={{ display: "flex", gap: 20 }}>
-      <ConversationList store={store} user={user} />
+    <div
+      style={{
+        display: "flex",
+        gap: 20,
+        padding: 20,
+      }}
+    >
+      <ConversationList
+        user={user}
+        store={store}
+      />
 
       <ChatWindow
-        store={store}
         user={user}
-        send={send}
+        store={store}
+        runtime={runtime}
       />
     </div>
   );

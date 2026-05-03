@@ -1,33 +1,60 @@
-import { useState } from "react";
-import { createMessage } from "./messageService";
+import { useState }
+from "react";
 
-export default function ChatInput({ store, user, send }) {
-  const [text, setText] = useState("");
-  const peer = store.activeChat;
+import {
+  createMessage,
+} from "../../core/protocol/createMessage";
+
+export default function ChatInput({
+  user,
+  peer,
+  runtime,
+}) {
+  const [text, setText]
+    = useState("");
 
   const handleSend = () => {
-    if (!peer || !text.trim()) return;
+    if (!text.trim()) {
+      return;
+    }
 
-    const msg = createMessage({
-      from: user,
-      to: peer,
-      content: text,
-    });
+    const message =
+      createMessage({
+        from: user,
 
-    store.addMessage(msg); // optimistic
-    send(msg);
+        to: peer,
+
+        content: text,
+      });
+
+    runtime.sendMessage(
+      message
+    );
 
     setText("");
   };
 
   return (
-    <div style={{ display: "flex", gap: 10 }}>
+    <div
+      style={{
+        marginTop: 24,
+        display: "flex",
+        gap: 8,
+      }}
+    >
       <input
         value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Message..."
+        onChange={(e) =>
+          setText(e.target.value)
+        }
+        style={{
+          flex: 1,
+        }}
       />
-      <button onClick={handleSend}>Send</button>
+
+      <button onClick={handleSend}>
+        Send
+      </button>
     </div>
   );
 }

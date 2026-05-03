@@ -1,12 +1,11 @@
+import {
+  formatTime,
+} from "../../shared/utils/time";
+
 export default function MessageList({
   messages,
   currentUser,
 }) {
-  const format = (t) => {
-    if (!t) return "";
-    return new Date(t).toLocaleTimeString();
-  };
-
   return (
     <div>
       {messages.map((m) => {
@@ -16,54 +15,65 @@ export default function MessageList({
         return (
           <div
             key={m.id}
-            style={{ marginBottom: 14 }}
+            style={{
+              marginBottom: 20,
+
+              borderBottom:
+                "1px solid #ddd",
+
+              paddingBottom: 12,
+            }}
           >
             <div>
-              {m.from}: {m.content}
+              <strong>
+                {m.from}
+              </strong>
+              : {m.content}
             </div>
 
             <div
               style={{
                 fontSize: 12,
                 color: "gray",
+                marginTop: 8,
               }}
             >
-              {mine ? (
-                <>
-                  {m.sentAt && (
-                    <div>
-                      sent: {format(m.sentAt)}
-                    </div>
-                  )}
+              {mine && (
+                <div>
+                  status:
+                  {" "}
+                  {m.status}
+                </div>
+              )}
 
-                  {m.deliveredAt && (
-                    <div>
-                      delivered:{" "}
-                      {format(m.deliveredAt)}
-                    </div>
+              {m.sentAt && (
+                <div>
+                  sent:
+                  {" "}
+                  {formatTime(
+                    m.sentAt
                   )}
+                </div>
+              )}
 
-                  {m.readAt && (
-                    <div>
-                      read: {format(m.readAt)}
-                    </div>
+              {m.deliveredAt && (
+                <div>
+                  delivered:
+                  {" "}
+                  {formatTime(
+                    m.deliveredAt
                   )}
-                </>
-              ) : (
-                <>
-                  {m.deliveredAt && (
-                    <div>
-                      delivered:{" "}
-                      {format(m.deliveredAt)}
-                    </div>
-                  )}
+                </div>
+              )}
 
-                  {m.readAt && (
-                    <div>
-                      read: {format(m.readAt)}
-                    </div>
+              {m.readAt && (
+                <div>
+                  read:
+                  {" "}
+                  {formatTime(
+                    m.readAt
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>

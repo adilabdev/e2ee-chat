@@ -1,112 +1,200 @@
-import { WebSocketServer } from "ws";
+import {
+  WebSocketServer,
+} from "ws";
 
-const wss = new WebSocketServer({ port: 3000 });
+import {
+  EVENTS,
+} from "../src/core/protocol/events.js";
+
+console.log(
+  "🚀 websocket server starting"
+);
+
+const wss =
+  new WebSocketServer({
+    port: 3000,
+  });
+
+console.log(
+  "✅ ws://localhost:3000"
+);
 
 const clients = new Map();
 
-console.log("🚀 WS running on ws://localhost:3000");
+function addClient(
+  userId,
+  ws
+) {
+  if (!clients.has(userId)) {
+    clients.set(
+      userId,
+      new Set()
+    );
+  }
 
-wss.on("connection", (ws) => {
-  let userId = null;
+  clients
+    .get(userId)
+    .add(ws);
+}
 
-  console.log("🟢 Client connected");
+function removeClient(ws) {
+  clients.forEach(
+    (set, userId) => {
+      set.delete(ws);
 
-  ws.on("message", (raw) => {
-    let data;
-
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      console.log("❌ invalid JSON");
-      return;
-    }
-
-    console.log("📩 RAW:", data);
-
-    // REGISTER
-    if (data.type === "register") {
-      userId = data.userId;
-
-      if (!clients.has(userId)) {
-        clients.set(userId, new Set());
-      }
-
-      clients.get(userId).add(ws);
-
-      console.log("✅ registered:", userId);
-    }
-
-    // TEXT MESSAGE
-    if (data.type === "text") {
-      const target = clients.get(data.to);
-
-      const sentAt = data.timestamp;
-      const deliveredAt = Date.now();
-
-      // RECEIVER
-      if (target) {
-        target.forEach((c) => {
-          c.send(
-            JSON.stringify({
-              ...data,
-              sentAt,
-              deliveredAt,
-            })
-          );
-        });
-
-        console.log(`📤 ${data.from} → ${data.to}`);
-
-        // SENDER DELIVERY UPDATE
-        const sender = clients.get(data.from);
-
-        sender?.forEach((c) => {
-          c.send(
-            JSON.stringify({
-              type: "delivered",
-              messageId: data.id,
-              deliveredAt,
-            })
-          );
-        });
-      } else {
-        console.log(`❌ user offline: ${data.to}`);
+      if (set.size === 0) {
+        clients.delete(userId);
       }
     }
+  );
+}
 
-    // READ EVENT
-    if (data.type === "read") {
-      const target = clients.get(data.to);
+function isOnline(userId) {
+  return clients.has(userId);
+}
 
-      const readAt = Date.now();
+function sendToUser(
+  userId,
+  data
+) {
+  const sockets =
+    clients.get(userId);
 
-      target?.forEach((c) => {
-        c.send(
-          JSON.stringify({
-            type: "read",
-            messageId: data.messageId,
-            readAt,
-          })
+  if (!sockets) {
+    return;
+  }
+
+  sockets.forEach((socket) => {
+    socket.send(
+      JSON.stringify(data)
+    );
+  });
+}
+
+wss.on(
+  "connection",
+  (ws) => {
+    console.log(
+      "🟢 connected"
+    );
+
+    let currentUser = null;
+
+    ws.on("close", () => {
+      console.log(
+        "❌ disconnected"
+      );
+
+      removeClient(ws);
+    });
+
+    ws.on(
+      "message",
+      (raw) => {
+        const data =
+          JSON.parse(raw);
+
+        console.log(
+          "📩",
+          data
         );
-      });
 
-      console.log("👁 read:", data.messageId);
-    }
-  });
+        if (
+          data.type ===
+          EVENTS.REGISTER
+        ) {
+          currentUser =
+            data.userId;
 
-  ws.on("close", () => {
-    if (!userId) return;
+          addClient(
+            currentUser,
+            ws
+          );
 
-    const set = clients.get(userId);
+          return;
+        }
 
-    if (!set) return;
+        if (
+          data.type ===
+          EVENTS.SEND_MESSAGE
+        ) {
+          const message =
+            data.payload;
 
-    set.delete(ws);
+          sendToUser(
+            message.from,
+            {
+              type:
+                EVENTS.SERVER_ACK,
 
-    if (set.size === 0) {
-      clients.delete(userId);
-    }
+              messageId:
+                message.id,
 
-    console.log("🔴 disconnected:", userId);
-  });
-});
+              conversationId:
+                message.conversationId,
+            }
+          );
+
+          const receiverOnline =
+            isOnline(
+              message.to
+            );
+
+          if (receiverOnline) {
+            sendToUser(
+              message.to,
+              {
+                type:
+                  EVENTS.SEND_MESSAGE,
+
+                payload:
+                  message,
+              }
+            );
+
+            sendToUser(
+              message.from,
+              {
+                type:
+                  EVENTS.DELIVERED_ACK,
+
+                messageId:
+                  message.id,
+
+                conversationId:
+                  message.conversationId,
+
+                deliveredAt:
+                  Date.now(),
+              }
+            );
+          }
+
+          return;
+        }
+
+        if (
+          data.type ===
+          EVENTS.READ_MESSAGE
+        ) {
+          sendToUser(
+            data.to,
+            {
+              type:
+                EVENTS.READ_ACK,
+
+              messageId:
+                data.messageId,
+
+              conversationId:
+                data.conversationId,
+
+              readAt:
+                Date.now(),
+            }
+          );
+        }
+      }
+    );
+  }
+);

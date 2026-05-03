@@ -1,39 +1,67 @@
-export default function ConversationList({ store, user, setTarget }) {
-  const users = ["A", "B", "C", "D"].filter(u => u !== user);
+export default function ConversationList({
+  user,
+  store,
+}) {
+  const users =
+    ["A", "B", "C", "D"]
+      .filter((u) => u !== user);
 
   return (
-    <div style={{ width: 200 }}>
-      <h4>Users</h4>
+    <div style={{ width: 240 }}>
+      <h2>Users</h2>
 
-      {users.map((u) => (
-        <div key={u} onClick={() => {
-          store.setActiveChat(u);
-          setTarget(u);
-        }}>
-          👤 {u}
-        </div>
-      ))}
+      {users.map((u) => {
+        return (
+          <div
+            key={u}
+            onClick={() =>
+              store.setActiveChat(u)
+            }
+            style={{
+              marginBottom: 12,
+              cursor: "pointer",
+            }}
+          >
+            👤 {u}
+          </div>
+        );
+      })}
 
       <hr />
 
-      <h4>Chats</h4>
+      <h2>Chats</h2>
 
-      {Object.keys(store.conversations).length === 0 && (
-        <p>No chats yet</p>
-      )}
-
-      {Object.entries(store.conversations)
-        .sort((a, b) => b[1].lastMessageAt - a[1].lastMessageAt)
+      {Object.entries(
+        store.conversations
+      )
+        .sort(
+          (a, b) =>
+            b[1].lastMessageAt -
+            a[1].lastMessageAt
+        )
         .map(([id, conv]) => {
-          const [a, b] = id.split("-");
-          const peer = a === user ? b : a;
+          const [a, b] =
+            id.split("-");
+
+          const peer =
+            a === user ? b : a;
 
           return (
-            <div key={id} onClick={() => {
-              store.setActiveChat(peer);
-              setTarget(peer);
-            }}>
-              💬 {peer} - {conv.lastMessage}
+            <div
+              key={id}
+              onClick={() =>
+                store.setActiveChat(
+                  peer
+                )
+              }
+              style={{
+                marginBottom: 12,
+                cursor: "pointer",
+              }}
+            >
+              💬 {peer} -
+              {" "}
+              {conv.lastMessage}
             </div>
           );
         })}
