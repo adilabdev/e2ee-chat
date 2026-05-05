@@ -1,200 +1,136 @@
-import {
-  WebSocketServer,
-} from "ws";
+import { WebSocketServer } from "ws";
+import { EVENTS } from "../src/core/protocol/events.js";
 
-import {
-  EVENTS,
-} from "../src/core/protocol/events.js";
+const wss = new WebSocketServer({ port: 3000 });
 
-console.log(
-  "🚀 websocket server starting"
-);
+console.log("🚀 ws://localhost:3000");
 
-const wss =
-  new WebSocketServer({
-    port: 3000,
-  });
+const users = new Map();
 
-console.log(
-  "✅ ws://localhost:3000"
-);
-
-const clients = new Map();
-
-function addClient(
-  userId,
-  ws
-) {
-  if (!clients.has(userId)) {
-    clients.set(
-      userId,
-      new Set()
-    );
-  }
-
-  clients
-    .get(userId)
-    .add(ws);
+/*
+users:
+userId → {
+  sockets: Set<WebSocket>,
+  lastSeen: number,
+  activeChat: string | null
 }
+*/
 
-function removeClient(ws) {
-  clients.forEach(
-    (set, userId) => {
-      set.delete(ws);
-
-      if (set.size === 0) {
-        clients.delete(userId);
-      }
-    }
-  );
+function ensureUser(userId) {
+  if (!users.has(userId)) {
+    users.set(userId, {
+      sockets: new Set(),
+      lastSeen: Date.now(),
+      activeChat: null,
+    });
+  }
+  return users.get(userId);
 }
 
 function isOnline(userId) {
-  return clients.has(userId);
+  const user = users.get(userId);
+  return user && user.sockets.size > 0;
 }
 
-function sendToUser(
-  userId,
-  data
-) {
-  const sockets =
-    clients.get(userId);
+function sendToUser(userId, data) {
+  const user = users.get(userId);
+  if (!user) return;
 
-  if (!sockets) {
-    return;
-  }
-
-  sockets.forEach((socket) => {
-    socket.send(
-      JSON.stringify(data)
-    );
+  user.sockets.forEach((ws) => {
+    ws.send(JSON.stringify(data));
   });
 }
 
-wss.on(
-  "connection",
-  (ws) => {
-    console.log(
-      "🟢 connected"
-    );
+wss.on("connection", (ws) => {
+  let currentUser = null;
 
-    let currentUser = null;
+  console.log("🟢 connected");
 
-    ws.on("close", () => {
-      console.log(
-        "❌ disconnected"
-      );
+  ws.on("close", () => {
+    if (!currentUser) return;
 
-      removeClient(ws);
-    });
+    const user = users.get(currentUser);
+    if (!user) return;
 
-    ws.on(
-      "message",
-      (raw) => {
-        const data =
-          JSON.parse(raw);
+    user.sockets.delete(ws);
+    user.lastSeen = Date.now();
 
-        console.log(
-          "📩",
-          data
-        );
+    if (user.sockets.size === 0) {
+      console.log(`🔴 ${currentUser} offline`);
+    }
+  });
 
-        if (
-          data.type ===
-          EVENTS.REGISTER
-        ) {
-          currentUser =
-            data.userId;
+  ws.on("message", (raw) => {
+    const data = JSON.parse(raw);
 
-          addClient(
-            currentUser,
-            ws
-          );
+    // REGISTER
+    if (data.type === EVENTS.REGISTER) {
+      currentUser = data.userId;
 
-          return;
-        }
+      const user = ensureUser(currentUser);
+      user.sockets.add(ws);
+      user.lastSeen = Date.now();
 
-        if (
-          data.type ===
-          EVENTS.SEND_MESSAGE
-        ) {
-          const message =
-            data.payload;
+      console.log(`🟢 ${currentUser} online`);
+      return;
+    }
 
-          sendToUser(
-            message.from,
-            {
-              type:
-                EVENTS.SERVER_ACK,
+    // ACTIVE CHAT
+    if (data.type === EVENTS.ACTIVE_CHAT_SET) {
+      const user = ensureUser(currentUser);
+      user.activeChat = data.conversationId;
+      return;
+    }
 
-              messageId:
-                message.id,
+    // SEND MESSAGE
+    if (data.type === EVENTS.SEND_MESSAGE) {
+      const msg = data.payload;
 
-              conversationId:
-                message.conversationId,
-            }
-          );
+      // server ack
+      sendToUser(msg.from, {
+        type: EVENTS.SERVER_ACK,
+        messageId: msg.id,
+        conversationId: msg.conversationId,
+      });
 
-          const receiverOnline =
-            isOnline(
-              message.to
-            );
+      // delivered sadece online ise
+      if (isOnline(msg.to)) {
+        sendToUser(msg.to, {
+          type: EVENTS.SEND_MESSAGE,
+          payload: msg,
+        });
 
-          if (receiverOnline) {
-            sendToUser(
-              message.to,
-              {
-                type:
-                  EVENTS.SEND_MESSAGE,
-
-                payload:
-                  message,
-              }
-            );
-
-            sendToUser(
-              message.from,
-              {
-                type:
-                  EVENTS.DELIVERED_ACK,
-
-                messageId:
-                  message.id,
-
-                conversationId:
-                  message.conversationId,
-
-                deliveredAt:
-                  Date.now(),
-              }
-            );
-          }
-
-          return;
-        }
-
-        if (
-          data.type ===
-          EVENTS.READ_MESSAGE
-        ) {
-          sendToUser(
-            data.to,
-            {
-              type:
-                EVENTS.READ_ACK,
-
-              messageId:
-                data.messageId,
-
-              conversationId:
-                data.conversationId,
-
-              readAt:
-                Date.now(),
-            }
-          );
-        }
+        sendToUser(msg.from, {
+          type: EVENTS.DELIVERED_ACK,
+          messageId: msg.id,
+          conversationId: msg.conversationId,
+          deliveredAt: Date.now(),
+        });
       }
-    );
-  }
-);
+
+      return;
+    }
+
+    // READ
+    if (data.type === EVENTS.READ_MESSAGE) {
+      const targetUser = data.to;
+
+      const receiver = users.get(currentUser);
+
+      // 🔥 KRİTİK CHECK
+      if (
+        receiver &&
+        receiver.activeChat === data.conversationId
+      ) {
+        sendToUser(targetUser, {
+          type: EVENTS.READ_ACK,
+          messageId: data.messageId,
+          conversationId: data.conversationId,
+          readAt: Date.now(),
+        });
+      }
+
+      return;
+    }
+  });
+});

@@ -44,25 +44,24 @@ export default function ChatWindow({
       : [];
 
   useEffect(() => {
-    messages.forEach((m) => {
-      const shouldRead =
-        m.from === peer &&
-        !m.readAt &&
-        !m.readSent;
+  if (!peer) return;
 
-      if (!shouldRead) {
-        return;
-      }
+  const unread = messages.filter((m) => {
+    return (
+      m.from === peer &&
+      !m.readAt &&
+      !m.readSent
+    );
+  });
 
-      runtime.markAsRead({
-        messageId: m.id,
-
-        conversationId,
-
-        to: peer,
-      });
+  unread.forEach((m) => {
+    runtime.markAsRead({
+      messageId: m.id,
+      conversationId,
+      to: peer,
     });
-  }, [messages]);
+  });
+}, [messages, peer]);
 
   return (
     <div style={{ flex: 1 }}>

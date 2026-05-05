@@ -68,6 +68,7 @@ export default function ChatShell({
         user={user}
         store={store}
         runtime={runtime}
+        socket={socketRef.current}
       />
     </div>
   );
